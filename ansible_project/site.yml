@@ -1,0 +1,54 @@
+- hosts: appservers
+  become: yes
+  vars:
+    app_user: ubuntu
+    app_dir: /srv/food-delivery/backend
+  tasks:
+    - name: Ensure apt updated
+      apt:
+        update_cache: yes
+
+    - name: Install prerequisites
+      apt:
+        name:
+          - unzip
+          - nginx
+        state: present
+
+    - name: Install NodeSource Node 18 (Ubuntu)
+      shell: |
+        curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+        apt-get install -y nodejs
+      args:
+        creates: /usr/bin/node
+
+    - name: Create app directory
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0755'
+
+    - name: Create systemd unit template for app
+      copy:
+        dest: /etc/systemd/system/food-delivery.service
+        content: |
+          [Unit]
+          Description=Food Delivery Backend
+          After=network.target
+          [Service]
+          Type=simple
+          User={{ app_user }}
+          WorkingDirectory={{ app_dir }}
+          ExecStart=/usr/bin/node server.js
+          Restart=on-failure
+      notify: reload systemd
+
+  handlers:
+    - name: reload systemd
+      systemd:
+        daemon_reload: yes
+        state: restarted
+        name: food-delivery
+        enabled: yes
