@@ -15,9 +15,16 @@ resource "aws_autoscaling_group" "app_asg" {
   max_size                  = 2
   min_size                  = 1
   desired_capacity          = 1
+
   launch_template {
     id      = aws_launch_template.app_lt.id
     version = "$Latest"
   }
-  tag { key = "Name"; value = "fooddelivery-app"; propagate_at_launch = true }
+
+  tag {
+    key                 = "Name"
+    value               = "fooddelivery-app"
+    propagate_at_launch = true
+  }
 }
+
